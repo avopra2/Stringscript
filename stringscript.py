@@ -20,6 +20,8 @@ def evaluatePrint(expr, variables, variableMap):
 
 
 
+
+
 def expressionInt(expr, variables, variableMap):
         return 0
 
@@ -28,6 +30,8 @@ def expressionList(expr, variables, variableMap):
 
 def expressionStr(expr, variables, variableMap):
         return ""
+
+
 
 def runEval(l, returnType):
         variables = []
@@ -57,44 +61,162 @@ def runEval(l, returnType):
                                 return ""
                 
                 # Print
-                if split_line[0] == "pr":
+                elif split_line[0] == "pr":
                         evaluatePrint(split_line[1:], variables, variableMap)
 
-                # int variable
-                if len(split_line[0]) == 1 and split_line[0].isalpha():
+                # Variable (I)
+                elif len(split_line[0]) == 1 and split_line[0].isalpha():
+                        
+                        # default to int
                         if split_line[0] not in variableMap:
                                 variableMap[split_line[0]] = variable_ct
                                 variables.append(0)
                                 variable_ct += 1
                         current_var = variableMap[split_line[0]]
 
-                        if len(split_line) > 1:
-                                # special incrementers
-                                if split_line[1] == "++":
-                                        variables[current_var] += 1
-                                        continue
-                                elif split_line[1] == "--":
-                                        variables[current_var] -= 1
-                                        continue
-                                elif split_line[1] == "+-":
-                                        variables[current_var] *= 1
-                                        continue
-                                elif split_line[1] == "-+":
-                                        variables[current_var] *= (-1)
-                                        continue
+                        # int case
+                        if isinstance(variables[current_var], int):
 
-                                # Assignment
-                                elif split_line[1] == "<-" or split_line[1] == "=":
-                                        if split_line[2:]:
-                                                variables[current_var] = expressionInt(split_line[2:], variables, variableMap)
+                                if len(split_line) > 1:
+                                        # special incrementers
+                                        if split_line[1] == "++":
+                                                variables[current_var] += 1
+                                                continue
+                                        elif split_line[1] == "--":
+                                                variables[current_var] -= 1
+                                                continue
+                                        elif split_line[1] == "+-":
+                                                variables[current_var] *= 1
+                                                continue
+                                        elif split_line[1] == "-+":
+                                                variables[current_var] *= (-1)
+                                                continue
+
+                                        # Assignment
+                                        elif split_line[1] == "<-" or split_line[1] == "=":
+                                                if split_line[2:]:
+                                                        variables[current_var] = expressionInt(split_line[2:], variables, variableMap)
+                                        
+                                        # Assignment-enhanced increment
+                                        elif split_line[1] == "+=":
+                                                if split_line[2:]:
+                                                        variables[current_var] += expressionInt(split_line[2:], variables, variableMap)
+                                        elif split_line[1] == "-=":
+                                                if split_line[2:]:
+                                                        variables[current_var] -= expressionInt(split_line[2:], variables, variableMap)
+                                        elif split_line[1] == "*=":
+                                                if split_line[2:]:
+                                                        variables[current_var] *= expressionInt(split_line[2:], variables, variableMap)
+                                        elif split_line[1] == "/=":
+                                                if split_line[2:]:
+                                                        variables[current_var] //= expressionInt(split_line[2:], variables, variableMap)
+                                        elif split_line[1] == "%=":
+                                                if split_line[2:]:
+                                                        variables[current_var] %= expressionInt(split_line[2:], variables, variableMap)
+                                        elif split_line[1] == "?=":
+                                                if split_line[2:]:
+                                                        variables[current_var] **= expressionInt(split_line[2:], variables, variableMap)
+
+                        # list case
+                        elif isinstance(variables[current_var], list):
+                                if len(split_line) > 2:
+
+                                        # Assignment
+                                        if (split_line[1] == "<-" or split_line[1] == "="):
+                                                variables[current_var] = expressionList(split_line[2:], variables, variableMap)
+                                        
+                                        # Assignment-enhanced increment
+                                        elif split_line[1] == "+=" or split_line[1] == "ext":
+                                                variables[current_var] += expressionList(split_line[2:], variables, variableMap)
+                                        
+                                        # Append
+                                        elif split_line[1] == "app":
+                                                variables[current_var].append(expressionInt(split_line[2:], variables, variableMap))
+                                        
+                                        # Prepend
+                                        elif split_line[1] == "pre":
+                                                variables[current_var].insert(0, expressionInt(split_line[2:], variables, variableMap))
+                                        
+                                        # Insert
+                                        elif split_line[1] == "ins" and len(split_line) > 3 and split_line[2].isdigit():
+                                                desiredIndex = int(split_line[2])
+                                                if 0 <= desiredIndex <= len(variables[current_var]):
+                                                        variables[current_var].insert(desiredIndex, expressionInt(split_line[3:], variables, variableMap))
+                                        
+                                        # Set
+                                        elif split_line[1] == "set" and len(split_line) > 3 and split_line[2].isdigit():
+                                                desiredIndex = int(split_line[2])
+                                                if 0 <= desiredIndex < len(variables[current_var]):
+                                                        variables[current_var][desiredIndex] = expressionInt(split_line[3:], variables, variableMap)
+                                        
+                                        # Pop
+                                        elif split_line[1] == "pop" and split_line[2].isdigit():
+                                                desiredIndex = int(split_line[2])
+                                                if 0 <= desiredIndex < len(variables[current_var]):
+                                                        variables[current_var].pop(desiredIndex)
                                 
-                                # Assignment-enhanced increment
-                                elif split_line[1] == "+=":
-                                        if split_line[2:]:
-                                                variables[current_var] += expressionInt(split_line[2:], variables, variableMap)
-                                elif split_line[1] == "-=":
-                                        if split_line[2:]:
-                                                variables[current_var] -= expressionInt(split_line[2:], variables, variableMap)
+                                if len(split_line) >= 2:
+
+                                        # Pop
+                                        if split_line[1] == "pop" and (len(split_line) == 2 or not split_line[2].isdigit()):
+                                                variables[current_var].pop()
+                                        
+                                        # Sort
+                                        elif split_line[1] == "sort":
+                                                variables[current_var].sort()
+                                        elif split_line[1] == "tros":
+                                                variables[current_var].sort(reverse = True)
+                                        
+                                        # Reverse
+                                        elif split_line[1] == "rev":
+                                                variables[current_var].reverse()
+                                        
+                                        # Clear
+                                        elif split_line[1] == "clr":
+                                                variables[current_var].clear()
+                        
+                        # string case
+                        elif isinstance(variables[current_var], str):
+                                if len(split_line) > 2:
+
+                                        # Assignment
+                                        if (split_line[1] == "<-" or split_line[1] == "="):
+                                                variables[current_var] = expressionStr(split_line[2:], variables, variableMap)
+                                        
+                                        # Assignment-enhanced increment
+                                        elif split_line[1] == "+=":
+                                                variables[current_var] += expressionStr(split_line[2:], variables, variableMap)
+                                
+                                if len(split_line) >= 2:
+
+                                        # strip
+                                        if split_line[1] == "strp":
+                                                variables[current_var] = variables[current_var].strip()
+                                        
+                                        # cases
+                                        elif split_line[1] == "upp":
+                                                variables[current_var] = variables[current_var].upper()
+                                        elif split_line[1] == "low":
+                                                variables[current_var] = variables[current_var].lower()
+                                        elif split_line[1] == "titl":
+                                                variables[current_var] = variables[current_var].title()
+                                        elif split_line[1] == "cap":
+                                                variables[current_var] = variables[current_var].capitalize()
+                
+
+                # Variable (Declarations)
+                elif split_line[0] == "int" and len(split_line) > 1 and len(split_line[0]) == 1 and split_line[1].isalpha():
+                        if split_line[0] in variableMap:
+                                print("Error: " + split_line[0] + " has already been declared")
+                                continue
+                        else:
+                                variableMap[split_line[0]] = variable_ct
+                                variables.append(0)
+                                variable_ct += 1
+                                current_var = variableMap[split_line[0]]
+
+                                if len(split_line) > 3 and split_line[2] == "<-" or split_line[2] == "=":
+                                        variables[current_var] = expressionInt(split_line[3:], variables, variableMap)
         
         # no return
         return ""
