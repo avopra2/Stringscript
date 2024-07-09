@@ -2,6 +2,7 @@
 Simple easy-to-use scripting language built in Python for quick programs and calculations
 
 Instructions:
+
 Clone and run ./stringscript.py
 More instructions TBD
 
