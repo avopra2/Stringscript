@@ -4,7 +4,9 @@ Simple easy-to-use scripting language built in Python for quick programs and cal
 Instructions:
 
 Clone and run ./stringscript.py
+
 More instructions TBD
+
 
 Upcoming Additions (Support for):
 Expression evaluation
