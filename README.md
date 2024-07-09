@@ -2,7 +2,8 @@
 Simple easy-to-use scripting language built in Python for quick programs and calculations
 
 Instructions:
-TBD
+Clone and run ./stringscript.py
+More instructions TBD
 
 Upcoming Additions (Support for):
 Expression evaluation
