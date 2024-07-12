@@ -4,13 +4,22 @@ def evaluatePrint(expr, variables, variableMap):
         for i in range(len(expr)):
                 current = expr[i]
 
-                if expr[i] in variableMap:
-                        if isinstance(variables[variableMap[expr[i]]], int):
-                                current = str(variables[variableMap[expr[i]]])
-                        elif isinstance(variables[variableMap[expr[i]]], list):
-                                current = ", ".join([str(item) for item in variables[variableMap[expr[i]]]])
-                        elif isinstance(variables[variableMap[expr[i]]], str):
-                                current = variables[variableMap[expr[i]]]
+                if current in variableMap:
+                        if isinstance(variables[variableMap[current]], int):
+                                current = str(variables[variableMap[current]])
+                        elif isinstance(variables[variableMap[current]], list):
+                                current = ", ".join([str(item) for item in variables[variableMap[current]]])
+                        elif isinstance(variables[variableMap[current]], str):
+                                current = variables[variableMap[current]]
+                
+                elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
+                        desiredIndex = int(current[1:])
+                        if 0 <= desiredIndex < len(variables[variableMap[current[0]]]):
+                                current = variables[variableMap[current[0]]][desiredIndex]
+                
+                elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
+                        desiredScaling = int(current[2:])
+                        current *= desiredScaling
 
                 printExpr.append(current)
         
@@ -29,7 +38,45 @@ def expressionList(expr, variables, variableMap):
         return []
 
 def expressionStr(expr, variables, variableMap):
-        return ""
+        # Eval-string variables
+        LIMIT_SPACE = 5
+        
+        strExpr = []
+
+        for i in range(len(expr)):
+                current = expr[i]
+
+                if current in variableMap:
+                        if isinstance(variables[variableMap[current]], int):
+                                current = str(variables[variableMap[current]])
+                        elif isinstance(variables[variableMap[current]], list):
+                                current = ", ".join([str(item) for item in variables[variableMap[current]]])
+                        elif isinstance(variables[variableMap[current]], str):
+                                current = variables[variableMap[current]]
+                
+                elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
+                        desiredIndex = int(current[1:])
+                        if 0 <= desiredIndex < len(variables[variableMap[current[0]]]):
+                                current = variables[variableMap[current[0]]][desiredIndex]
+                
+                elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
+                        desiredScaling = int(current[2:])
+                        current *= desiredScaling
+
+                #space
+                elif "_" in current:
+                        for numSpaces in range(1, LIMIT_SPACE + 1):
+                                if "_" * numSpaces == current:
+                                        current = " " * numSpaces
+
+
+                strExpr.append(current)
+        
+        finalStr = ""
+        for strTerm in strExpr:
+                finalStr += strTerm
+        
+        return finalStr
 
 
 
@@ -205,18 +252,44 @@ def runEval(l, returnType):
                 
 
                 # Variable (Declarations)
-                elif split_line[0] == "int" and len(split_line) > 1 and len(split_line[0]) == 1 and split_line[1].isalpha():
-                        if split_line[0] in variableMap:
-                                print("Error: " + split_line[0] + " has already been declared")
+                elif split_line[0] == "int" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
+                        if split_line[1] in variableMap:
+                                print("Error: " + split_line[1] + " has already been declared")
                                 continue
                         else:
-                                variableMap[split_line[0]] = variable_ct
+                                variableMap[split_line[1]] = variable_ct
                                 variables.append(0)
                                 variable_ct += 1
-                                current_var = variableMap[split_line[0]]
+                                current_var = variableMap[split_line[1]]
 
-                                if len(split_line) > 3 and split_line[2] == "<-" or split_line[2] == "=":
+                                if len(split_line) > 3 and (split_line[2] == "<-" or split_line[2] == "="):
                                         variables[current_var] = expressionInt(split_line[3:], variables, variableMap)
+                
+                elif split_line[0] == "list" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
+                        if split_line[1] in variableMap:
+                                print("Error: " + split_line[1] + " has already been declared")
+                                continue
+                        else:
+                                variableMap[split_line[1]] = variable_ct
+                                variables.append([])
+                                variable_ct += 1
+                                current_var = variableMap[split_line[1]]
+
+                                if len(split_line) > 3 and (split_line[2] == "<-" or split_line[2] == "="):
+                                        variables[current_var] = expressionList(split_line[3:], variables, variableMap)
+                
+                elif split_line[0] == "str" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
+                        if split_line[1] in variableMap:
+                                print("Error: " + split_line[1] + " has already been declared")
+                                continue
+                        else:
+                                variableMap[split_line[1]] = variable_ct
+                                variables.append("")
+                                variable_ct += 1
+                                current_var = variableMap[split_line[1]]
+
+                                if len(split_line) > 3 and (split_line[2] == "<-" or split_line[2] == "="):
+                                        variables[current_var] = expressionStr(split_line[3:], variables, variableMap)
         
         # no return
         return ""
