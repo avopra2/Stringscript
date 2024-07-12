@@ -13,13 +13,22 @@ def evaluatePrint(expr, variables, variableMap):
                                 current = variables[variableMap[current]]
                 
                 elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
-                        desiredIndex = int(current[1:])
-                        if 0 <= desiredIndex < len(variables[variableMap[current[0]]]):
-                                current = variables[variableMap[current[0]]][desiredIndex]
+                        desired_index = int(current[1:])
+                        if 0 <= desired_index < len(variables[variableMap[current[0]]]):
+                                current = variables[variableMap[current[0]]][desired_index]
                 
                 elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
-                        desiredScaling = int(current[2:])
-                        current *= desiredScaling
+                        desired_scaling = int(current[2:])
+                        current = variables[variableMap[current[0]]] * desired_scaling
+                
+                elif len(current) == 3 and current[0] in variableMap and current[1:] == "id":
+                        current = str(variableMap[current[0]])
+                
+                elif len(current) > 2 and current.count("*") == 1:
+                        scale_ind = current.index("*")
+                        if 1 <= scale_ind < len(current) - 1 and current[scale_ind + 1:].isdigit():
+                                desired_scaling = int(current[scale_ind + 1:])
+                                current = current[:scale_ind] * desired_scaling
 
                 printExpr.append(current)
         
@@ -34,13 +43,48 @@ def evaluatePrint(expr, variables, variableMap):
 def expressionInt(expr, variables, variableMap):
         return 0
 
+
+
+
+
 def expressionList(expr, variables, variableMap):
-        return []
+        finalList = []
+        
+        commas = [-1]
+        for i in range(len(expr)):
+                if expr[i] == ",":
+                        commas.append(i)
+        commas.append(len(expr))
+
+        for i in range(len(commas) - 1):
+                first_comma = commas[i]
+                second_comma = commas[i + 1]
+
+                if second_comma - first_comma == 2 and expr[first_comma + 1] in variableMap:
+                        current_var = variableMap[expr[first_comma + 1]]
+
+                        if isinstance(variables[current_var], int):
+                                finalList.append(variables[current_var])
+                        elif isinstance(variables[current_var], list):
+                                for intElem in variables[current_var]:
+                                        finalList.append(intElem)
+                        elif isinstance(variables[current_var], str):
+                                if variables[current_var].isdigit():
+                                        finalList.append(int(variables[current_var]))
+                                else:
+                                        print("Error: String variable " + expr[first_comma + 1] + " in int-based list")
+                                        finalList.append(0)
+
+                elif second_comma - first_comma > 1:
+                        finalList.append(expressionInt(expr[first_comma + 1: second_comma], variables, variableMap))
+
+        return finalList
 
 def expressionStr(expr, variables, variableMap):
         # Eval-string variables
         LIMIT_SPACE = 5
         
+        finalStr = ""
         strExpr = []
 
         for i in range(len(expr)):
@@ -55,13 +99,19 @@ def expressionStr(expr, variables, variableMap):
                                 current = variables[variableMap[current]]
                 
                 elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
-                        desiredIndex = int(current[1:])
-                        if 0 <= desiredIndex < len(variables[variableMap[current[0]]]):
-                                current = variables[variableMap[current[0]]][desiredIndex]
+                        desired_index = int(current[1:])
+                        if 0 <= desired_index < len(variables[variableMap[current[0]]]):
+                                current = variables[variableMap[current[0]]][desired_index]
                 
                 elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
-                        desiredScaling = int(current[2:])
-                        current *= desiredScaling
+                        desired_scaling = int(current[2:])
+                        current = variables[variableMap[current[0]]] * desired_scaling
+                
+                elif len(current) > 2 and current.count("*") == 1:
+                        scale_ind = current.index("*")
+                        if 1 <= scale_ind < len(current) - 1 and current[scale_ind + 1:].isdigit():
+                                desired_scaling = int(current[scale_ind + 1:])
+                                current = current[:scale_ind] * desired_scaling
 
                 #space
                 elif "_" in current:
@@ -72,11 +122,12 @@ def expressionStr(expr, variables, variableMap):
 
                 strExpr.append(current)
         
-        finalStr = ""
         for strTerm in strExpr:
                 finalStr += strTerm
         
         return finalStr
+
+
 
 
 
@@ -186,21 +237,21 @@ def runEval(l, returnType):
                                         
                                         # Insert
                                         elif split_line[1] == "ins" and len(split_line) > 3 and split_line[2].isdigit():
-                                                desiredIndex = int(split_line[2])
-                                                if 0 <= desiredIndex <= len(variables[current_var]):
-                                                        variables[current_var].insert(desiredIndex, expressionInt(split_line[3:], variables, variableMap))
+                                                desired_index = int(split_line[2])
+                                                if 0 <= desired_index <= len(variables[current_var]):
+                                                        variables[current_var].insert(desired_index, expressionInt(split_line[3:], variables, variableMap))
                                         
                                         # Set
                                         elif split_line[1] == "set" and len(split_line) > 3 and split_line[2].isdigit():
-                                                desiredIndex = int(split_line[2])
-                                                if 0 <= desiredIndex < len(variables[current_var]):
-                                                        variables[current_var][desiredIndex] = expressionInt(split_line[3:], variables, variableMap)
+                                                desired_index = int(split_line[2])
+                                                if 0 <= desired_index < len(variables[current_var]):
+                                                        variables[current_var][desired_index] = expressionInt(split_line[3:], variables, variableMap)
                                         
                                         # Pop
                                         elif split_line[1] == "pop" and split_line[2].isdigit():
-                                                desiredIndex = int(split_line[2])
-                                                if 0 <= desiredIndex < len(variables[current_var]):
-                                                        variables[current_var].pop(desiredIndex)
+                                                desired_index = int(split_line[2])
+                                                if 0 <= desired_index < len(variables[current_var]):
+                                                        variables[current_var].pop(desired_index)
                                 
                                 if len(split_line) >= 2:
 
@@ -379,7 +430,8 @@ def run():
                         except ValueError as e:
                                 print(e) 
                 
-                print("Your result is", result)
+                print("Your result is...")
+                print(result)
         else:
                 _ = runEval(lines, "")
 
