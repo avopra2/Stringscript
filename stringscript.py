@@ -1,3 +1,8 @@
+from collections import defaultdict, deque
+
+
+
+
 def evaluatePrint(expr, variables, variableMap):
         printExpr = []
 
@@ -40,8 +45,75 @@ def evaluatePrint(expr, variables, variableMap):
 
 
 
+def updateExpressionInt(op, v, st):
+        # Same level of order of operations
+        if op == "+":
+                st.append(v)
+        if op == "-":
+                st.append(-v)
+        
+        # Same level of order of operations
+        if op == "*":
+                st.append(st.pop() * v)
+        if op == "/":
+                st.append(st.pop() // v)
+        if op == "%":
+                st.append(st.pop() % v)
+        
+def helperExpressionInt(expr):
+        i = 0
+        currentTermValue = 0
+        st = deque()
+        sign = "+"
+        
+        # PLACEHOLDER
+        while i < len(expr):
+                currentItem = expr[i]
+
+                if currentItem.isdigit():
+                        currentTermValue = currentTermValue * 10 + int(currentItem)
+
+                elif currentItem in "+-*/%":
+                        updateExpressionInt(sign, currentTermValue, st)
+                        currentTermValue = 0
+                        sign = currentItem
+
+                elif currentItem == "(":
+                        currentTermValue, j = helperExpressionInt(expr[i + 1:])
+                        i += j
+
+                elif currentItem == ")":
+                        updateExpressionInt(sign, currentTermValue, st)
+                        return sum(st), i + 1
+                
+                i += 1
+
+        updateExpressionInt(sign, currentTermValue, st)
+
+        return sum(st), i
+
 def expressionInt(expr, variables, variableMap):
-        return 0
+        # Credit https://leetcode.com/u/DBabichev/ for inspiration
+        
+        transformedExpr = []
+
+        for i in range(len(expr)):
+                # PLACEHOLDER
+                current = expr[i]
+
+                if current in variableMap:
+                        if isinstance(variables[variableMap[current]], int):
+                                current = str(variables[variableMap[current]])
+                        elif isinstance(variables[variableMap[current]], list):
+                                print("Error: List variable " + current + " in int epression")
+                                continue
+                        elif isinstance(variables[variableMap[current]], str):
+                                print("Error: String variable " + current + " in int epression")
+                                continue
+
+                transformedExpr.append(current)
+        
+        return helperExpressionInt(transformedExpr)[0]
 
 
 
