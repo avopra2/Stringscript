@@ -19,12 +19,6 @@ Floats
 
 Conditional logic
 
-Iteration: for loops
+Iteration
 
-Iteration: while loops
-
-A flexible list interface
-
-A flexible set interface
-
-A flexible map interface
+Additional flexible data type interfaces
