@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict, deque
 
 # Small helper functions
@@ -28,38 +29,41 @@ def productList(lst):
 
 
 def evaluatePrint(expr, variables, variableMap):
+        split_expr = expr.split()
         printExpr = []
 
-        for i in range(len(expr)):
-                current = expr[i]
+        for i in range(len(split_expr)):
+                current = split_expr[i]
+                newCurrent = current
 
                 if current in variableMap:
                         if isinstance(variables[variableMap[current]], int):
-                                current = str(variables[variableMap[current]])
+                                newCurrent = str(variables[variableMap[current]])
                         elif isinstance(variables[variableMap[current]], list):
-                                current = ", ".join([str(item) for item in variables[variableMap[current]]])
+                                newCurrent = ", ".join([str(item) for item in variables[variableMap[current]]])
                         elif isinstance(variables[variableMap[current]], str):
-                                current = variables[variableMap[current]]
+                                newCurrent = variables[variableMap[current]]
                 
-                elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
-                        desired_index = int(current[1:])
-                        if 0 <= desired_index < len(variables[variableMap[current[0]]]):
-                                current = variables[variableMap[current[0]]][desired_index]
+                elif len(current) > 1 and current[0] in variableMap and isinstance(variables[variableMap[current[0]]], list):
+                        newCurrent = str(expressionInt(current, variables, variableMap))
                 
-                elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
-                        desired_scaling = int(current[2:])
-                        current = variables[variableMap[current[0]]] * desired_scaling
+                elif len(current) == 4 and current[0] in variableMap and current[1:4] == "len":
+                        newCurrent = str(expressionInt(current, variables, variableMap))
+                
+                elif len(current) > 2 and current[0] in variableMap and current[1] == "*":
+                        desired_scaling = expressionInt(current[2:], variables, variableMap)
+                        newCurrent = expressionStr(current[0], variables, variableMap) * desired_scaling
                 
                 elif len(current) == 3 and current[0] in variableMap and current[1:] == "id":
-                        current = str(variableMap[current[0]])
+                        newCurrent = str(variableMap[current[0]])
                 
                 elif len(current) > 2 and current.count("*") == 1:
                         scale_ind = current.index("*")
-                        if 1 <= scale_ind < len(current) - 1 and current[scale_ind + 1:].isdigit():
-                                desired_scaling = int(current[scale_ind + 1:])
-                                current = current[:scale_ind] * desired_scaling
+                        if 1 <= scale_ind < len(current) - 1:
+                                desired_scaling = expressionInt(current[scale_ind + 1:], variables, variableMap)
+                                newCurrent = current[:scale_ind] * desired_scaling
 
-                printExpr.append(current)
+                printExpr.append(newCurrent)
         
         for printItem in printExpr:
                 print(printItem, end = " ")
@@ -93,7 +97,7 @@ def helperExpressionInt(expr):
         while i < len(expr):
                 currentItem = expr[i]
 
-                if currentItem.isinteger():
+                if isinteger(currentItem):
                         currentTermValue = int(currentItem)
 
                 elif currentItem in "+-*/%":
@@ -121,15 +125,17 @@ def expressionInt(expr, variables, variableMap):
         # Eval-int variables
         SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^", "=", "!", "<", ">", "{", "}"}
         
+        split_expr = expr.split()
         transformedExpr = []
         parenS = ""
 
-        for i in range(len(expr)):
-                current = expr[i]
+        for i in range(len(split_expr)):
+                current = split_expr[i]
+                newCurrent = current
 
                 if current in variableMap:
                         if isinstance(variables[variableMap[current]], int):
-                                current = str(variables[variableMap[current]])
+                                newCurrent = str(variables[variableMap[current]])
                         elif isinstance(variables[variableMap[current]], list):
                                 print("Error: List variable " + current + " in int epression")
                                 continue
@@ -138,17 +144,21 @@ def expressionInt(expr, variables, variableMap):
                                 continue
                 
                 # list index
-                elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
-                        if isinstance(variables[variableMap[current[0]]], int):
-                                print("Error: Attempt to index into int variable " + current[0])
-                                continue
-                        elif isinstance(variables[variableMap[current[0]]], str):
-                                print("Error: Character in int epression")
-                                continue
-                        elif isinstance(variables[variableMap[current[0]]], list):
+                elif len(current) > 1 and current[0] in variableMap and isinstance(variables[variableMap[current[0]]], list):
+                        current_var = variableMap[current[0]]
+                        if isinteger(current[1:]):
                                 desired_index = int(current[1:])
-                                if 0 <= desired_index < len(variables[variableMap[current[0]]]):
-                                        current = str(variables[variableMap[current[0]]][desired_index])
+                                if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
+                                        newCurrent = str(variables[current_var][desired_index])
+                                else:
+                                        print("Error: Index out of bounds in list ", current[0])
+                                
+                        elif current[1] == "[" and len(current) > 2:
+                                desired_index = expressionInt(current[2:], variables, variableMap)
+                                if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
+                                        newCurrent = str(variables[current_var][desired_index])
+                                else:
+                                        print("Error: Index out of bounds in list ", current[0])
                 
                 # length
                 elif len(current) == 4 and current[0] in variableMap and current[1:4] == "len":
@@ -156,38 +166,38 @@ def expressionInt(expr, variables, variableMap):
                                 print("Error: Attempt to get length of int variable " + current[0])
                                 continue
                         elif isinstance(variables[variableMap[current[0]]], str):
-                                current = str(len(variables[variableMap[current[0]]]))
+                                newCurrent = str(len(variables[variableMap[current[0]]]))
                         elif isinstance(variables[variableMap[current[0]]], list):
-                                current = str(len(variables[variableMap[current[0]]]))
+                                newCurrent = str(len(variables[variableMap[current[0]]]))
                 
                 # sum, product, min, max
                 elif len(current) == 4 and current[0] in variableMap and current[1:4] in {"sum", "pro", "min", "max"}:
                         if isinstance(variables[variableMap[current[0]]], list):
                                 if current[1:4] == "sum":
-                                        current = str(sum(variables[variableMap[current[0]]]))
+                                        newCurrent = str(sum(variables[variableMap[current[0]]]))
                                 elif current[1:4] == "pro":
-                                        current = str(productList(variables[variableMap[current[0]]]))
+                                        newCurrent = str(productList(variables[variableMap[current[0]]]))
                                 elif current[1:4] == "min":
-                                        current = str(min(variables[variableMap[current[0]]]))
+                                        newCurrent = str(min(variables[variableMap[current[0]]]))
                                 elif current[1:4] == "max":
-                                        current = str(max(variables[variableMap[current[0]]]))
+                                        newCurrent = str(max(variables[variableMap[current[0]]]))
                 
-                elif current.isinteger() and transformedExpr and transformedExpr[-1].isinteger():
+                elif isinteger(current) and transformedExpr and isinteger(transformedExpr[-1]):
                         print("Error: two ints in a row in int expression")
                         continue
                 
                 # negative
-                elif not current.isinteger() and len(current) > 1 and current[0] == "-":
-                        current = str(-1 * expressionInt(current[1:], variables, variableMap))
+                elif not isinteger(current) and len(current) > 1 and current[0] == "-":
+                        newCurrent = str(-1 * expressionInt(current[1:], variables, variableMap))
                 
-                elif not current.isinteger() and current not in SUPPORTED_OPS:
+                elif not isinteger(current) and current not in SUPPORTED_OPS:
                         continue
                 
 
                 if current == "(" or current == ")":
                         parenS += current
 
-                transformedExpr.append(current)
+                transformedExpr.append(newCurrent)
         
         if not validParens(parenS):
                 print("Error: Invalid parentheses in int expression")
@@ -201,19 +211,36 @@ def expressionInt(expr, variables, variableMap):
 
 def expressionList(expr, variables, variableMap):
         finalList = []
+
+        if not expr:
+                return finalList
+        
+        listVariables = set()
+        intVariables = set()
+        for variable, enc in variableMap.items():
+                if isinstance(variables[enc], list):
+                        listVariables.add(variable)
+                if isinstance(variables[enc], int):
+                        intVariables.add(variable)
+        
+        split_expr = expr.split()
         
         commas = [-1]
-        for i in range(len(expr)):
-                if expr[i] == ",":
+        for i in range(len(split_expr)):
+                if split_expr[i] == ",":
                         commas.append(i)
-        commas.append(len(expr))
+        commas.append(len(split_expr))
 
         for i in range(len(commas) - 1):
                 first_comma = commas[i]
                 second_comma = commas[i + 1]
+                inside_commas = second_comma - first_comma - 1
 
-                if second_comma - first_comma == 2 and expr[first_comma + 1] in variableMap:
-                        current_var = variableMap[expr[first_comma + 1]]
+                if inside_commas == 0:
+                        continue
+
+                elif inside_commas == 1 and split_expr[first_comma + 1] in variableMap:
+                        current_var = variableMap[split_expr[first_comma + 1]]
 
                         if isinstance(variables[current_var], int):
                                 finalList.append(variables[current_var])
@@ -221,58 +248,121 @@ def expressionList(expr, variables, variableMap):
                                 for intElem in variables[current_var]:
                                         finalList.append(intElem)
                         elif isinstance(variables[current_var], str):
-                                if variables[current_var].isinteger():
+                                if isinteger(variables[current_var]):
                                         finalList.append(int(variables[current_var]))
                                 else:
-                                        print("Error: String variable " + expr[first_comma + 1] + " in int-based list")
+                                        print("Error: String variable " + split_expr[first_comma + 1] + " in int-based list")
                                         finalList.append(0)
+                
 
-                elif second_comma - first_comma > 1:
-                        finalList.append(expressionInt(expr[first_comma + 1: second_comma], variables, variableMap))
+                elif inside_commas == 1 and len(split_expr[first_comma + 1]) > 2 and split_expr[first_comma + 1][0] in listVariables:
+                        current_var = variableMap[split_expr[first_comma + 1][0]]
+
+                        if isinstance(variables[current_var], list):
+                                if split_expr[first_comma + 1][1:] in {"sort", "tros", "rev"}:
+                                        if split_expr[first_comma + 1][1:5] == "sort":
+                                                for intElem in sorted(variables[current_var]):
+                                                        finalList.append(intElem)
+                                        elif split_expr[first_comma + 1][1:5] == "tros":
+                                                for intElem in sorted(variables[current_var], reverse = True):
+                                                        finalList.append(intElem)
+                                        elif split_expr[first_comma + 1][1:4] == "rev":
+                                                for intElem in list(reversed(variables[current_var])):
+                                                        finalList.append(intElem)
+
+                                elif split_expr[first_comma + 1][1] == "*":
+                                        desired_scaling = expressionInt(split_expr[first_comma + 1][2:], variables, variableMap)
+                                        for _ in range(desired_scaling):
+                                                for intElem in variables[current_var]:
+                                                        finalList.append(intElem)
+                
+
+                elif inside_commas == 1 and len(split_expr[first_comma + 1]) > 2 and split_expr[first_comma + 1][0] in intVariables:
+                        current_var = variableMap[split_expr[first_comma + 1][0]]
+
+                        if isinstance(variables[current_var], int) and split_expr[first_comma + 1][1] == "*":
+                                desired_scaling = expressionInt(split_expr[first_comma + 1][2:], variables, variableMap)
+                                for _ in range(desired_scaling):
+                                        finalList.append(variables[current_var])
+                
+
+                elif inside_commas == 1 and len(split_expr[first_comma + 1]) > 2 and split_expr[first_comma + 1].count("*") == 1:
+                        scale_ind = split_expr[first_comma + 1].index("*")
+                        desired_scaling = expressionInt(split_expr[first_comma + 1][scale_ind + 1:], variables, variableMap)
+                        for _ in range(desired_scaling):
+                                finalList.append(expressionInt(split_expr[first_comma + 1][:scale_ind], variables, variableMap))
+
+
+                elif inside_commas > 0:
+                        finalList.append(expressionInt(split_expr[first_comma + 1: second_comma], variables, variableMap))
 
         return finalList
+
+
+
+
 
 def expressionStr(expr, variables, variableMap):
         # Eval-string variables
         LIMIT_SPACE = 5
         
+        split_expr = expr.split()
         finalStr = ""
         strExpr = []
 
-        for i in range(len(expr)):
-                current = expr[i]
+        for i in range(len(split_expr)):
+                current = split_expr[i]
+                newCurrent = current
 
                 if current in variableMap:
                         if isinstance(variables[variableMap[current]], int):
-                                current = str(variables[variableMap[current]])
+                                newCurrent = str(variables[variableMap[current]])
                         elif isinstance(variables[variableMap[current]], list):
-                                current = ", ".join([str(item) for item in variables[variableMap[current]]])
+                                newCurrent = ", ".join([str(item) for item in variables[variableMap[current]]])
                         elif isinstance(variables[variableMap[current]], str):
-                                current = variables[variableMap[current]]
+                                newCurrent = variables[variableMap[current]]
                 
-                elif len(current) > 1 and current[0] in variableMap and current[1:].isdigit():
-                        desired_index = int(current[1:])
-                        if 0 <= desired_index < len(variables[variableMap[current[0]]]):
-                                current = variables[variableMap[current[0]]][desired_index]
+                elif len(current) > 1 and current[0] in variableMap and isinstance(variables[variableMap[current[0]]], list):
+                        newCurrent = str(expressionInt(current, variables, variableMap))
                 
-                elif len(current) > 2 and current[0] in variableMap and current[1] == "*" and current[2:].isdigit():
-                        desired_scaling = int(current[2:])
-                        current = variables[variableMap[current[0]]] * desired_scaling
+                elif len(current) == 4 and current[0] in variableMap and current[1:4] == "len":
+                        newCurrent = str(expressionInt(current, variables, variableMap))
+                
+                elif len(current) > 2 and current[0] in variableMap and isinstance(variables[variableMap[current[0]]], str):
+                        current_var = variableMap[current[0]]
+
+                        if current[1:4] in {"stp", "upp", "low", "ttl", "cap", "rev"}:
+                                if current[1:4] == "stp":
+                                        newCurrent = variables[current_var].strip()
+                                elif current[1:4] == "upp":
+                                        newCurrent = variables[current_var].upper()
+                                elif current[1:4] == "low":
+                                        newCurrent = variables[current_var].lower()
+                                elif current[1:4] == "ttl":
+                                        newCurrent = variables[current_var].title()
+                                elif current[1:4] == "cap":
+                                        newCurrent = variables[current_var].capitalize()
+                                elif current[1:4] == "rev":
+                                        newCurrent = variables[current_var][::-1]
+                        
+                        elif current[1] == "*":
+                                desired_scaling = expressionInt(current[2:], variables, variableMap)
+                                newCurrent = variables[current_var] * desired_scaling
                 
                 #space
                 elif "_" in current:
                         for numSpaces in range(1, LIMIT_SPACE + 1):
                                 if "_" * numSpaces == current:
-                                        current = " " * numSpaces
+                                        newCurrent = " " * numSpaces
                 
                 elif len(current) > 2 and current.count("*") == 1:
                         scale_ind = current.index("*")
-                        if 1 <= scale_ind < len(current) - 1 and current[scale_ind + 1:].isdigit():
-                                desired_scaling = int(current[scale_ind + 1:])
-                                current = current[:scale_ind] * desired_scaling
+                        if 1 <= scale_ind < len(current) - 1:
+                                desired_scaling = expressionInt(current[scale_ind + 1:], variables, variableMap)
+                                newCurrent = current[:scale_ind] * desired_scaling
 
 
-                strExpr.append(current)
+                strExpr.append(newCurrent)
         
         for strTerm in strExpr:
                 finalStr += strTerm
@@ -388,27 +478,33 @@ def runEval(l, returnType):
                                                 variables[current_var].insert(0, expressionInt(split_line[2:], variables, variableMap))
                                         
                                         # Insert
-                                        elif split_line[1] == "ins" and len(split_line) > 3 and split_line[2].isdigit():
-                                                desired_index = int(split_line[2])
-                                                if 0 <= desired_index <= len(variables[current_var]):
+                                        elif split_line[1] == "ins" and len(split_line) > 3:
+                                                desired_index = expressionInt(split_line[2], variables, variableMap)
+                                                if -1 * len(variables[current_var]) <= desired_index <= len(variables[current_var]):
                                                         variables[current_var].insert(desired_index, expressionInt(split_line[3:], variables, variableMap))
+                                                else:
+                                                        print("Error: Index out of bounds in list ", split_line[0])
                                         
                                         # Set
-                                        elif split_line[1] == "set" and len(split_line) > 3 and split_line[2].isdigit():
-                                                desired_index = int(split_line[2])
-                                                if 0 <= desired_index < len(variables[current_var]):
+                                        elif split_line[1] == "set" and len(split_line) > 3:
+                                                desired_index = expressionInt(split_line[2], variables, variableMap)
+                                                if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
                                                         variables[current_var][desired_index] = expressionInt(split_line[3:], variables, variableMap)
+                                                else:
+                                                        print("Error: Index out of bounds in list ", split_line[0])
                                         
                                         # Pop
-                                        elif split_line[1] == "pop" and split_line[2].isdigit():
-                                                desired_index = int(split_line[2])
-                                                if 0 <= desired_index < len(variables[current_var]):
+                                        elif split_line[1] == "pop":
+                                                desired_index = expressionInt(split_line[2:], variables, variableMap)
+                                                if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
                                                         variables[current_var].pop(desired_index)
+                                                else:
+                                                        print("Error: Index out of bounds in list ", split_line[0])
                                 
                                 if len(split_line) >= 2:
 
                                         # Pop
-                                        if split_line[1] == "pop" and (len(split_line) == 2 or not split_line[2].isdigit()):
+                                        if split_line[1] == "pop" and len(split_line) == 2:
                                                 variables[current_var].pop()
                                         
                                         # Sort
@@ -440,7 +536,7 @@ def runEval(l, returnType):
                                 if len(split_line) >= 2:
 
                                         # strip
-                                        if split_line[1] == "strp":
+                                        if split_line[1] == "stp":
                                                 variables[current_var] = variables[current_var].strip()
                                         
                                         # cases
@@ -448,7 +544,7 @@ def runEval(l, returnType):
                                                 variables[current_var] = variables[current_var].upper()
                                         elif split_line[1] == "low":
                                                 variables[current_var] = variables[current_var].lower()
-                                        elif split_line[1] == "titl":
+                                        elif split_line[1] == "ttl":
                                                 variables[current_var] = variables[current_var].title()
                                         elif split_line[1] == "cap":
                                                 variables[current_var] = variables[current_var].capitalize()
@@ -458,6 +554,26 @@ def runEval(l, returnType):
                                                 variables[current_var] = variables[current_var][::-1]
                 
 
+                # Variable (Index)
+                elif len(split_line[0]) > 1 and split_line[0][0] in variableMap and len(split_line) > 2 and (split_line[1] == "<-" or split_line[1] == "="):
+                        current_var = variableMap[split_line[0][0]]
+
+                        if isinstance(variables[current_var], list):
+                                if isinteger(split_line[0][1:]):
+                                        desired_index = int(split_line[0][1:])
+                                        if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
+                                                variables[current_var][desired_index] = expressionInt(split_line[2:], variables, variableMap)
+                                        else:
+                                                print("Error: Index out of bounds in list ", split_line[0][0])
+                                
+                                elif split_line[0][1] == "[" and len(split_line[0]) > 2:
+                                        desired_index = expressionInt(split_line[0][2:], variables, variableMap)
+                                        if -1 * len(variables[current_var]) <= desired_index < len(variables[current_var]):
+                                                variables[current_var][desired_index] = expressionInt(split_line[2:], variables, variableMap)
+                                        else:
+                                                print("Error: Index out of bounds in list ", split_line[0][0])
+                
+                
                 # Variable (Declarations)
                 elif split_line[0] == "int" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
                         if split_line[1] in variableMap:
