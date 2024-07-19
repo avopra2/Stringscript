@@ -26,6 +26,28 @@ def productList(lst):
                 pro *= elem
         return pro
 
+def avgAllList(lst):
+        if not lst:
+                return -1
+        return sum(lst) // len(lst)
+
+def gcdAllList(lst):
+        if not lst:
+                return -1
+        gcd = lst[0]
+        for i in range(1, len(lst)):
+                gcd = math.gcd(gcd, lst[i])
+        return gcd
+
+def lcmAllList(lst):
+        if not lst:
+                return -1
+        lcm = lst[0]
+        for i in range(1, len(lst)):
+                # lcm formula
+                lcm = abs(lcm * lst[i]) // math.gcd(lcm, lst[i])
+        return lcm
+
 
 
 def evaluatePrint(expr, variables, variableMap):
@@ -83,9 +105,9 @@ def updateExpressionInt(op, v, st):
         # Same level of order of operations
         if op == "*":
                 st.append(st.pop() * v)
-        if op == "/":
+        if op == "/" and v != 0:
                 st.append(st.pop() // v)
-        if op == "%":
+        if op == "%" and v != 0:
                 st.append(st.pop() % v)
         
 def helperExpressionInt(expr):
@@ -124,6 +146,7 @@ def expressionInt(expr, variables, variableMap):
 
         # Eval-int variables
         SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^", "=", "!", "<", ">", "{", "}"}
+        SUPPORTED_LISTOPS = {"sum", "pro", "min", "max", "avg", "gcd", "lcm", "pow", "ncr", "npr"}
         
         split_expr = expr.split()
         transformedExpr = []
@@ -162,25 +185,42 @@ def expressionInt(expr, variables, variableMap):
                 
                 # length
                 elif len(current) == 4 and current[0] in variableMap and current[1:4] == "len":
-                        if isinstance(variables[variableMap[current[0]]], int):
+                        current_var = variableMap[current[0]]
+                        if isinstance(variables[current_var], int):
                                 print("Error: Attempt to get length of int variable " + current[0])
                                 continue
-                        elif isinstance(variables[variableMap[current[0]]], str):
-                                newCurrent = str(len(variables[variableMap[current[0]]]))
-                        elif isinstance(variables[variableMap[current[0]]], list):
-                                newCurrent = str(len(variables[variableMap[current[0]]]))
+                        elif isinstance(variables[current_var], str):
+                                newCurrent = str(len(variables[current_var]))
+                        elif isinstance(variables[current_var], list):
+                                newCurrent = str(len(variables[current_var]))
                 
                 # sum, product, min, max
-                elif len(current) == 4 and current[0] in variableMap and current[1:4] in {"sum", "pro", "min", "max"}:
-                        if isinstance(variables[variableMap[current[0]]], list):
+                elif len(current) == 4 and current[0] in variableMap and current[1:4] in SUPPORTED_LISTOPS:
+                        current_var = variableMap[current[0]]
+                        if isinstance(variables[current_var], list):
                                 if current[1:4] == "sum":
-                                        newCurrent = str(sum(variables[variableMap[current[0]]]))
+                                        newCurrent = str(sum(variables[current_var]))
                                 elif current[1:4] == "pro":
-                                        newCurrent = str(productList(variables[variableMap[current[0]]]))
+                                        newCurrent = str(productList(variables[current_var]))
                                 elif current[1:4] == "min":
-                                        newCurrent = str(min(variables[variableMap[current[0]]]))
+                                        newCurrent = str(min(variables[current_var]))
                                 elif current[1:4] == "max":
-                                        newCurrent = str(max(variables[variableMap[current[0]]]))
+                                        newCurrent = str(max(variables[current_var]))
+                                elif current[1:4] == "avg":
+                                        newCurrent = str(avgAllList(variables[current_var]))
+                                elif current[1:4] == "gcd":
+                                        newCurrent = str(gcdAllList(variables[current_var]))
+                                elif current[1:4] == "lcm":
+                                        newCurrent = str(lcmAllList(variables[current_var]))
+                                elif len(variables[current_var]) == 2:
+                                        first, second = variables[current_var]
+                                        if current[1:4] == "pow":
+                                                newCurrent = str(first ** second)
+                                        elif current[1:4] == "ncr":
+                                                newCurrent = str(math.comb(first, second))
+                                        elif current[1:4] == "npr":
+                                                newCurrent = str(math.perm(first, second))
+
                 
                 elif isinteger(current) and transformedExpr and isinteger(transformedExpr[-1]):
                         print("Error: two ints in a row in int expression")
@@ -189,6 +229,14 @@ def expressionInt(expr, variables, variableMap):
                 # negative
                 elif not isinteger(current) and len(current) > 1 and current[0] == "-":
                         newCurrent = str(-1 * expressionInt(current[1:], variables, variableMap))
+                
+                # absolute value
+                elif not isinteger(current) and len(current) > 1 and current[0] == "|":
+                        newCurrent = str(abs(expressionInt(current[1:], variables, variableMap)))
+                
+                # factorial
+                elif not isinteger(current) and len(current) > 1 and current[-1] == "!":
+                        newCurrent = str(math.factorial(abs(expressionInt(current[:-1], variables, variableMap))))
                 
                 elif not isinteger(current) and current not in SUPPORTED_OPS:
                         continue
@@ -449,7 +497,11 @@ def runEval(l, returnType):
                                                         variables[current_var] *= expressionInt(split_line[2:], variables, variableMap)
                                         elif split_line[1] == "/=":
                                                 if split_line[2:]:
-                                                        variables[current_var] //= expressionInt(split_line[2:], variables, variableMap)
+                                                        desired_result = expressionInt(split_line[2:], variables, variableMap)
+                                                        if desired_result == 0:
+                                                                variables[current_var] = desired_result
+                                                        else:    
+                                                                variables[current_var] //= desired_result
                                         elif split_line[1] == "%=":
                                                 if split_line[2:]:
                                                         variables[current_var] %= expressionInt(split_line[2:], variables, variableMap)
