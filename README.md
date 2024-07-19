@@ -1,5 +1,5 @@
 # Stringscript
-Simple easy-to-use scripting language built in Python for quick programs and calculations
+Simple easy-to-use scripting language built in Python for quick programs and calculations in the command line
 _________________________
 Instructions:
 
@@ -19,12 +19,8 @@ Floats
 
 Conditional logic
 
-Iteration: for loops
+Iteration
 
-Iteration: while loops
+Additional flexible data type interfaces
 
-A flexible list interface
-
-A flexible set interface
-
-A flexible map interface
+Matrices
