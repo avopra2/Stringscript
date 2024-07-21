@@ -1,5 +1,5 @@
 # Stringscript
-Simple easy-to-use scripting language built in Python for quick programs and calculations
+Simple easy-to-use scripting language built in Python for quick programs and calculations in the command line
 _________________________
 Instructions:
 
