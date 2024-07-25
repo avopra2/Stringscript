@@ -477,7 +477,23 @@ def runEval(l, returnType):
                 
                 # Debug
                 elif split_line[0] == "bug":
-                        print(variableMap, variables)
+                        print("Variables mapped to their ids:", variableMap, "; Variable values:", variables)
+                
+                # Swap
+                elif split_line[0] == "swap" and len(split_line) == 3 and split_line[1] in variableMap and split_line[2] in variableMap:
+                        current_var1 = variableMap[split_line[1]]
+                        current_var2 = variableMap[split_line[2]]
+
+                        temp = variables[current_var1]
+                        variables[current_var1] = variables[current_var2]
+                        variables[current_var2] = temp
+                
+                # Delete variable(s)
+                elif split_line[0] == "del":
+                        for i in range(1, len(split_line)):
+                                if split_line[i] in variableMap:
+                                        variables[variableMap[split_line[i]]] = None
+                                        del variableMap[split_line[i]]
 
                 # Variable (I)
                 elif len(split_line[0]) == 1 and split_line[0].isalpha():
@@ -729,6 +745,7 @@ def run():
         TYPES_SUPPORTED = {"int", "list", "str"}
         lines_supported = 20
         end_program = "done"
+        undo_program = "UNDO"
         
         # Eval-code variables
         # LIMITS = [10, 1] # 0: vars, 1: funcs
@@ -750,8 +767,13 @@ def run():
                 if line == end_program:
                         break
                 
-                lines.append(line)
-                num_lines += 1
+                elif line == undo_program and lines:
+                        lines.pop()
+                        num_lines -= 1
+                
+                else:
+                        lines.append(line)
+                        num_lines += 1
         
         if lines:
                 if lines[0] in TYPES_SUPPORTED:
