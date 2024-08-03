@@ -746,9 +746,11 @@ def run():
         lines_supported = 20
         end_program = "done"
         undo_program = "UNDO"
+        remove_program = "REMOVE"
+        edit_program = "EDITTO"
         
         # Eval-code variables
-        # LIMITS = [10, 1] # 0: vars, 1: funcs
+        # LIMITS = [20, 1] # 0: vars, 1: funcs
 
         # Variables
         returns = False
@@ -767,9 +769,18 @@ def run():
                 if line == end_program:
                         break
                 
-                elif line == undo_program and lines:
+                elif line == undo_program and num_lines > 0:
                         lines.pop()
                         num_lines -= 1
+                
+                elif len(line) > 7 and line[:6] == remove_program and line[6] == " " and line[7:].isdigit() and num_lines > 0:
+                        desired_line_num = int(line[7:])
+
+                        if 0 <= desired_line_num < num_lines:
+                                lines.pop(desired_line_num)
+                                num_lines -= 1
+                        else:
+                                continue
                 
                 else:
                         lines.append(line)
