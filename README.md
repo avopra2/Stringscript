@@ -11,10 +11,6 @@ Expression evaluation
 
 Calculator features
 
-Membership operators
-
-Logical operators
-
 Floats
 
 Conditional logic
