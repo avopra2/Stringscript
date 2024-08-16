@@ -146,8 +146,89 @@ def expressionInt(expr, variables, variableMap):
         # Credit https://leetcode.com/u/DBabichev/ for inspiration
 
         # Eval-int variables
-        SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^", "=", "!", "<", ">", "{", "}"}
+        SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^"}
         SUPPORTED_LISTOPS = {"sum", "pro", "min", "max", "avg", "gcd", "lcm", "pow", "ncr", "npr"}
+        COMPARISON_OPS = {"=", "!", "<", ">", "{", "}"}
+
+        # Contains or
+        if "@" in expr:
+                or_exprs = []
+                current_expr = []
+
+                for i in range(len(expr)):
+                        current = expr[i]
+
+                        if current == "@":
+                                if current_expr:
+                                        or_exprs.append(current_expr)
+                                        current_expr = []
+                        else:
+                                current_expr.append(current)
+                if current_expr:
+                        or_exprs.append(current_expr)
+                
+                evaluation = 0
+                for or_expr in or_exprs:
+                        evaluation = int(bool(evaluation) or bool(expressionInt(or_expr, variables, variableMap)))
+
+                return evaluation
+        
+        # Contains and
+        if "&" in expr:
+                and_exprs = []
+                current_expr = []
+
+                for i in range(len(expr)):
+                        current = expr[i]
+
+                        if current == "&":
+                                if current_expr:
+                                        and_exprs.append(current_expr)
+                                        current_expr = []
+                        else:
+                                current_expr.append(current)
+                if current_expr:
+                        and_exprs.append(current_expr)
+                
+                # 0 and 0 = 0, p and 0 = 0
+                if len(and_exprs) < 2:
+                        return 0
+                else:
+                        evaluation = 1
+                        for and_expr in and_exprs:
+                                evaluation = int(bool(evaluation) and bool(expressionInt(and_expr, variables, variableMap)))
+                        return evaluation
+        
+        # Contains not
+        if "#" in expr:
+                not_exprs = []
+                current_expr = []
+                modified_expr = []
+                prefix = False
+
+                if expr[0] != "#":
+                        prefix = True
+
+                for i in range(len(expr)):
+                        current = expr[i]
+
+                        if current == "#":
+                                if not prefix and current_expr:
+                                        not_exprs.append(current_expr)
+                                        current_expr = []
+                                prefix = False
+                        elif prefix:
+                                modified_expr.append(current)
+                        else:
+                                current_expr.append(current)
+                if not prefix and current_expr:
+                        not_exprs.append(current_expr)
+                
+                for not_expr in not_exprs:
+                        modified_expr.append(str(int(not(expressionInt(not_expr, variables, variableMap)))))
+
+                return expressionInt(modified_expr, variables, variableMap)
+
         
         transformedExpr = []
         parenS = ""
@@ -747,7 +828,7 @@ def run():
         end_program = "done"
         undo_program = "UNDO"
         remove_program = "REMOVE"
-        edit_program = "EDITTO"
+        # edit_program = "EDITTO"
         
         # Eval-code variables
         # LIMITS = [20, 1] # 0: vars, 1: funcs
