@@ -149,6 +149,7 @@ def expressionInt(expr, variables, variableMap):
         SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^"}
         SUPPORTED_LISTOPS = {"sum", "pro", "min", "max", "avg", "gcd", "lcm", "pow", "ncr", "npr"}
         COMPARISON_OPS = {"=", "!", "<", ">", "{", "}"}
+        comp_op_present = False
 
         # Contains or
         if "@" in expr:
@@ -228,6 +229,64 @@ def expressionInt(expr, variables, variableMap):
                         modified_expr.append(str(int(not(expressionInt(not_expr, variables, variableMap)))))
 
                 return expressionInt(modified_expr, variables, variableMap)
+
+        # Contains comparison operator
+        for comp_op in COMPARISON_OPS:
+                if comp_op in expr:
+                        comp_op_present = True
+                        break
+        
+        if comp_op_present:
+                comp_exprs = []
+                current_expr = []
+                comp_ops = []
+
+                for i in range(len(expr)):
+                        current = expr[i]
+
+                        if current in COMPARISON_OPS:
+                                if current_expr:
+                                        comp_exprs.append(current_expr)
+                                        current_expr = []
+                                
+                                if i > 0 and expr[i - 1] in COMPARISON_OPS:
+                                        print("Error: two comparison operators in a row in int expression")
+                                        return -1
+                                
+                                comp_ops.append(current)
+
+                        else:
+                                current_expr.append(current)
+                if current_expr:
+                        comp_exprs.append(current_expr)
+                
+                # Case that expression starts with comparison -> start with 0
+                if expr[0] in COMPARISON_OPS:
+                        comp_exprs.insert(0, ["0"])
+                
+                # Case that expression ends with comparison -> ends with 0
+                if expr[-1] in COMPARISON_OPS:
+                        comp_exprs.append(["0"])
+                
+                evaluation = expressionInt(comp_exprs[0], variables, variableMap)
+
+                for i in range(1, len(comp_exprs)):
+                        current_op = comp_ops[i - 1]
+
+                        if current_op == "=":
+                                evaluation = int(evaluation == expressionInt(comp_exprs[i], variables, variableMap))
+                        if current_op == "!":
+                                evaluation = int(evaluation != expressionInt(comp_exprs[i], variables, variableMap))
+                        if current_op == "<":
+                                evaluation = int(evaluation < expressionInt(comp_exprs[i], variables, variableMap))
+                        if current_op == ">":
+                                evaluation = int(evaluation > expressionInt(comp_exprs[i], variables, variableMap))
+                        if current_op == "{":
+                                evaluation = int(evaluation <= expressionInt(comp_exprs[i], variables, variableMap))
+                        if current_op == "}":
+                                evaluation = int(evaluation >= expressionInt(comp_exprs[i], variables, variableMap))
+
+                return evaluation
 
         
         transformedExpr = []
@@ -356,7 +415,7 @@ def expressionInt(expr, variables, variableMap):
         
         if not validParens(parenS):
                 print("Error: Invalid parentheses in int expression")
-                return 0
+                return -1
         
         return helperExpressionInt(transformedExpr)[0]
 
