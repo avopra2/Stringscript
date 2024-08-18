@@ -7,7 +7,6 @@ Clone and run ./stringscript.py
 More instructions TBD
 _________________________
 Upcoming Additions (Support for):
-Expression evaluation
 
 Calculator features
 
