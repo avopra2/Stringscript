@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import math
-from collections import defaultdict, deque
+from collections import deque
 
 # Small helper functions
 def isinteger(s):
@@ -584,12 +584,11 @@ def expressionStr(expr, variables, variableMap):
 
 
 
-def runEval(l, returnType):
-        variables = []
-        variableMap = {}
-        variable_ct = 0
+def runEval(l, returnType, variables, variableMap, variable_ct):
+        i_line = 0
+        while i_line < len(l):
+                line = l[i_line]
 
-        for line in l:
                 if not line:
                         continue
 
@@ -848,6 +847,43 @@ def runEval(l, returnType):
 
                                 if len(split_line) > 3 and (split_line[2] == "<-" or split_line[2] == "="):
                                         variables[current_var] = expressionStr(split_line[3:], variables, variableMap)
+                
+                # If statement
+                elif split_line[0] == "if" and len(split_line) > 1:
+                        endif_index = -1
+                        will_return = False
+
+                        for future_i_line in range(i_line + 1, len(l)):
+                                future_line = l[future_i_line]
+
+                                if not future_line:
+                                        continue
+
+                                future_split_line = future_line.split()
+
+                                if future_split_line[0] == "endif":
+                                        endif_index = future_i_line
+                                        break
+
+                                if future_split_line[0] == "re":
+                                        will_return = True
+                        
+                        if endif_index != -1:
+                                if expressionInt(split_line[1:], variables, variableMap) != 0:
+                                        # Case that there is no return yet, evaluate regularly
+                                        if not will_return:
+                                                _ = runEval(l[i_line + 1: endif_index], "", variables, variableMap, variable_ct)
+                                        
+                                        # Case that there is a return statement in the block
+                                        else:
+                                                return runEval(l[i_line + 1: endif_index], returnType, variables, variableMap, variable_ct)
+                                
+                                i_line = endif_index
+                        else:
+                                print("Error: if statement block never ends")
+                                break
+                                        
+                i_line += 1
         
         # no return
         return ""
@@ -933,8 +969,13 @@ def run():
         print()
 
         # Evaluate
+        variables = []
+        variableMap = {}
+        variable_ct = 0
+
         if returns:
-                serializedResult = runEval(lines[1:], lines[0][:3])
+                serializedResult = runEval(lines[1:], lines[0][:3], variables, variableMap, variable_ct)
+                result = None
 
                 if lines[0] == "int":
                         try:
@@ -954,10 +995,11 @@ def run():
                         except ValueError as e:
                                 print(e) 
                 
-                print("Your result is...")
-                print(result)
+                if result is not None:
+                        print("Your result is...")
+                        print(result)
         else:
-                _ = runEval(lines, "")
+                _ = runEval(lines, "", variables, variableMap, variable_ct)
 
         print("Thanks for using Stringscript!")
 
