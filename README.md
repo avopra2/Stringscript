@@ -8,14 +8,4 @@ More instructions TBD
 _________________________
 Upcoming Additions (Support for):
 
-Calculator features
-
-Floats
-
-Conditional logic
-
-Iteration
-
-Additional flexible data type interfaces
-
-Matrices
+Additional flexible datatypes
