@@ -50,6 +50,34 @@ def lcmAllList(lst):
                 lcm = abs(lcm * lst[i]) // math.gcd(lcm, lst[i])
         return lcm
 
+def evaluateRange(expr, variables, variableMap):
+        if not (expr.startswith(('(', '[')) and expr.endswith((')', ']'))):
+                print("Error: Invalid range format: must start with ( or [ and end with ) or ]")
+                return 0, -1
+
+        core = expr[1:-1]
+
+        core_parts = core.split(',')
+        if len(core_parts) != 2:
+                print("Error: Invalid range format: must contain two numbers")
+                return 0, -1
+        
+        start_index = expressionInt([core_parts[0].strip()], variables, variableMap)
+        end_index = expressionInt([core_parts[1].strip()], variables, variableMap)
+
+        if expr.startswith('('):
+                start_index += 1  # Exclusive start, so increment
+        if expr.endswith(')'):
+                end_index -= 1  # Exclusive end, so decrement
+
+        if start_index > end_index:
+                print("Error: Invalid range format: start cannot be greater than end")
+                return 0, -1
+
+        return start_index, end_index
+
+
+
 
 
 def evaluatePrint(expr, variables, variableMap):
@@ -397,8 +425,8 @@ def expressionInt(expr, variables, variableMap):
                         newCurrent = str(-1 * expressionInt([current[1:]], variables, variableMap))
                 
                 # absolute value
-                elif not isinteger(current) and len(current) > 1 and current[0] == "|":
-                        newCurrent = str(abs(expressionInt([current[1:]], variables, variableMap)))
+                elif not isinteger(current) and len(current) > 1 and current[0] == "|" and current[-1] == "|":
+                        newCurrent = str(abs(expressionInt([current[1:-1]], variables, variableMap)))
                 
                 # factorial
                 elif not isinteger(current) and len(current) > 1 and current[-1] == "!":
@@ -590,6 +618,7 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                 line = l[i_line]
 
                 if not line:
+                        i_line += 1
                         continue
 
                 split_line = line.split()
@@ -651,15 +680,19 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                                         # special incrementers
                                         if split_line[1] == "++":
                                                 variables[current_var] += 1
+                                                i_line += 1
                                                 continue
                                         elif split_line[1] == "--":
                                                 variables[current_var] -= 1
+                                                i_line += 1
                                                 continue
                                         elif split_line[1] == "+-":
                                                 variables[current_var] *= 1
+                                                i_line += 1
                                                 continue
                                         elif split_line[1] == "-+":
                                                 variables[current_var] *= (-1)
+                                                i_line += 1
                                                 continue
 
                                         # Assignment
@@ -812,6 +845,7 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                 elif split_line[0] == "int" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
                         if split_line[1] in variableMap:
                                 print("Error: " + split_line[1] + " has already been declared")
+                                i_line += 1
                                 continue
                         else:
                                 variableMap[split_line[1]] = variable_ct
@@ -825,6 +859,7 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                 elif split_line[0] == "list" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
                         if split_line[1] in variableMap:
                                 print("Error: " + split_line[1] + " has already been declared")
+                                i_line += 1
                                 continue
                         else:
                                 variableMap[split_line[1]] = variable_ct
@@ -838,6 +873,7 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                 elif split_line[0] == "str" and len(split_line) > 1 and len(split_line[1]) == 1 and split_line[1].isalpha():
                         if split_line[1] in variableMap:
                                 print("Error: " + split_line[1] + " has already been declared")
+                                i_line += 1
                                 continue
                         else:
                                 variableMap[split_line[1]] = variable_ct
@@ -869,18 +905,160 @@ def runEval(l, returnType, variables, variableMap, variable_ct):
                                         will_return = True
                         
                         if endif_index != -1:
+                                if_block = l[i_line + 1: endif_index]
+                                
                                 if expressionInt(split_line[1:], variables, variableMap) != 0:
                                         # Case that there is no return yet, evaluate regularly
                                         if not will_return:
-                                                _ = runEval(l[i_line + 1: endif_index], "", variables, variableMap, variable_ct)
+                                                _ = runEval(if_block, "", variables, variableMap, variable_ct)
                                         
                                         # Case that there is a return statement in the block
                                         else:
-                                                return runEval(l[i_line + 1: endif_index], returnType, variables, variableMap, variable_ct)
+                                                return runEval(if_block, returnType, variables, variableMap, variable_ct)
                                 
                                 i_line = endif_index
                         else:
                                 print("Error: if statement block never ends")
+                                break
+                
+                # For loop
+                elif split_line[0] == "for" and len(split_line) > 2 and len(split_line[1]) == 1:
+                        endfor_index = -1
+                        will_return = False
+                        step_size = 1
+                        is_enhanced_list = False
+                        is_enhanced_str = False
+                        range_start_inclusive = None
+                        range_end_inclusive = None
+
+                        # Check if enhanced for loop
+                        if split_line[2] in variableMap:
+                                current_var = variableMap[split_line[2]]
+
+                                if isinstance(variables[current_var], int):
+                                        print("Error: Attempt to iterate through int variable " + split_line[2])
+                                        i_line += 1
+                                        continue
+                                elif isinstance(variables[current_var], list):
+                                        is_enhanced_list = True
+                                elif isinstance(variables[current_var], str):
+                                        is_enhanced_str = True
+                        
+                        # Check range
+                        if not is_enhanced_list and not is_enhanced_str:
+                                range_start_inclusive, range_end_inclusive = evaluateRange(split_line[2], variables, variableMap)
+
+                                if range_start_inclusive > range_end_inclusive:
+                                        i_line += 1
+                                        continue
+                        
+                        # Check iteration variable
+                        if split_line[1] in variableMap:
+                                current_var = variableMap[split_line[1]]
+
+                                if not isinstance(variables[current_var], int) and not is_enhanced_str:
+                                        print("Error: Attempt to iterate using non-int variable " + split_line[1])
+                                        i_line += 1
+                                        continue
+                                if not isinstance(variables[current_var], str) and is_enhanced_str:
+                                        print("Error: Attempt to string-iterate using non-str variable " + split_line[1])
+                                        i_line += 1
+                                        continue
+                        else:
+                                if is_enhanced_str:
+                                        variableMap[split_line[1]] = variable_ct
+                                        variables.append("")
+                                        variable_ct += 1
+                                else:
+                                        variableMap[split_line[1]] = variable_ct
+                                        variables.append(0)
+                                        variable_ct += 1
+
+                        # Check iteration step size
+                        if len(split_line) > 3:
+                                step_size = expressionInt(split_line[3:], variables, variableMap)
+
+                                if step_size == 0:
+                                        print("Error: Attempt to iterate infinitely")
+                                        i_line += 1
+                                        continue
+
+                        # Look through the for loop block
+                        for future_i_line in range(i_line + 1, len(l)):
+                                future_line = l[future_i_line]
+
+                                if not future_line:
+                                        continue
+
+                                future_split_line = future_line.split()
+
+                                if future_split_line[0] == "endfor":
+                                        endfor_index = future_i_line
+                                        break
+
+                                if future_split_line[0] == "re":
+                                        will_return = True
+                        
+                        if endfor_index != -1:
+                                for_block = l[i_line + 1: endfor_index]
+                                current_var = variableMap[split_line[1]]
+
+                                # Evaluate enhanced for loop
+                                if is_enhanced_list or is_enhanced_str:
+                                        range_start_inclusive = 0
+                                        range_end_inclusive = len(variables[variableMap[split_line[2]]]) - 1
+
+                                        if will_return:
+                                                if step_size > 0:
+                                                        for iteration in range(range_start_inclusive, range_end_inclusive + 1, step_size):
+                                                                variables[current_var] = variables[variableMap[split_line[2]]][iteration]
+                                                                evalMaybe = runEval(for_block, returnType, variables, variableMap, variable_ct)
+                                                                if evalMaybe != "":
+                                                                        return evalMaybe
+                                                else:
+                                                        for iteration in range(range_end_inclusive, range_start_inclusive - 1, step_size):
+                                                                variables[current_var] = variables[variableMap[split_line[2]]][iteration]
+                                                                evalMaybe = runEval(for_block, returnType, variables, variableMap, variable_ct)
+                                                                if evalMaybe != "":
+                                                                        return evalMaybe
+                                        else:
+                                                if step_size > 0:
+                                                        for iteration in range(range_start_inclusive, range_end_inclusive + 1, step_size):
+                                                                variables[current_var] = variables[variableMap[split_line[2]]][iteration]
+                                                                _ = runEval(for_block, "", variables, variableMap, variable_ct)
+                                                else:
+                                                        for iteration in range(range_end_inclusive, range_start_inclusive - 1, step_size):
+                                                                variables[current_var] = variables[variableMap[split_line[2]]][iteration]
+                                                                _ = runEval(for_block, "", variables, variableMap, variable_ct)
+                                
+                                # Evaluate range for loop
+                                else:
+                                        if will_return:
+                                                if step_size > 0:
+                                                        for iteration in range(range_start_inclusive, range_end_inclusive + 1, step_size):
+                                                                variables[current_var] = iteration
+                                                                evalMaybe = runEval(for_block, returnType, variables, variableMap, variable_ct)
+                                                                if evalMaybe != "":
+                                                                        return evalMaybe
+                                                else:
+                                                        for iteration in range(range_end_inclusive, range_start_inclusive - 1, step_size):
+                                                                variables[current_var] = iteration
+                                                                evalMaybe = runEval(for_block, returnType, variables, variableMap, variable_ct)
+                                                                if evalMaybe != "":
+                                                                        return evalMaybe
+                                        else:
+                                                if step_size > 0:
+                                                        for iteration in range(range_start_inclusive, range_end_inclusive + 1, step_size):
+                                                                variables[current_var] = iteration
+                                                                _ = runEval(for_block, "", variables, variableMap, variable_ct)
+                                                else:
+                                                        for iteration in range(range_end_inclusive, range_start_inclusive - 1, step_size):
+                                                                variables[current_var] = iteration
+                                                                _ = runEval(for_block, "", variables, variableMap, variable_ct)
+                                
+                                i_line = endfor_index
+                        else:
+                                print("Error: for loop block never ends")
                                 break
                                         
                 i_line += 1
