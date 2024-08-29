@@ -525,13 +525,27 @@ def expressionList(expr, variables, variableMap):
                                 for _ in range(desired_scaling):
                                         finalList.append(variables[current_var])
                 
-
                 elif inside_commas == 1 and len(expr[first_comma + 1]) > 2 and expr[first_comma + 1].count("*") == 1:
                         scale_ind = expr[first_comma + 1].index("*")
                         desired_scaling = expressionInt([expr[first_comma + 1][scale_ind + 1:]], variables, variableMap)
                         for _ in range(desired_scaling):
                                 finalList.append(expressionInt([expr[first_comma + 1][:scale_ind]], variables, variableMap))
+                
+                elif inside_commas > 0 and expr[first_comma + 1][0] == "[" or expr[first_comma + 1][0] == "(":
+                        range_start_inclusive, range_end_inclusive = evaluateRange(expr[first_comma + 1], variables, variableMap)
+                        step_size = 1
+                        if inside_commas > 1:
+                                step_size = expressionInt([expr[first_comma + 2]], variables, variableMap)
 
+                        if step_size == 0:
+                                for iteration in range(range_start_inclusive, range_end_inclusive + 1):
+                                        finalList.append(iteration)
+                        elif step_size > 0:
+                                for iteration in range(range_start_inclusive, range_end_inclusive + 1, step_size):
+                                        finalList.append(iteration)
+                        else:
+                                for iteration in range(range_end_inclusive, range_start_inclusive - 1, step_size):
+                                        finalList.append(iteration)           
 
                 elif inside_commas > 0:
                         finalList.append(expressionInt(expr[first_comma + 1: second_comma], variables, variableMap))
