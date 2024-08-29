@@ -9,3 +9,5 @@ _________________________
 Upcoming Additions (Support for):
 
 Additional flexible datatypes
+
+UPDATE: Added file "improvements.txt" to document necessary Additions
