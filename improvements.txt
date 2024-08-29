@@ -1,0 +1,56 @@
+Future improvements that are necessary to make.
+
+Expressions
+__________________________________________________
+Fix comparisons betweetn non-ints
+Other places were bracket delimiters would be useful
+Exponentiation
+
+Variables
+__________________________________________________
+Variables names of any desired length
+Error-handle if variable name is in set of Stringscript keywords
+"vars" keyword for declaration of multiple variables
+
+Blocks
+__________________________________________________
+While loops
+Keywords break and continue
+Support for a few levels of nesting
+
+Errors
+__________________________________________________
+More comfortable error-handling for the user
+Use more try-catch blocks
+
+User Commands
+__________________________________________________
+EDIT
+
+Functions
+__________________________________________________
+The user should be able to implement their own custom functions
+Support for recursion
+
+Methods
+__________________________________________________
+Richer methods for the provided datatypes, going beyond Python
+
+Datatypes
+__________________________________________________
+Range (for lists)
+Floats
+Matrices
+Maps
+Deques
+Linked lists
+Graphs (including Trees (general Tree, BST, Trie, Heap, etc.))
+Complex
+Custom structs?
+
+LIMITS (to prevent excessive scripts)
+__________________________________________________
+LIMIT the number of variables able to be made
+LIMIT the number of functions able to be made
+LIMIT the number of loop iterations
+Increse the limit on the number of lines per script
