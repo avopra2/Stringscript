@@ -177,6 +177,7 @@ def expressionInt(expr, variables, variableMap):
         SUPPORTED_OPS = {"+", "-", "*", "/", "%", "(", ")", "^"}
         SUPPORTED_LISTOPS = {"sum", "pro", "min", "max", "avg", "gcd", "lcm", "pow", "ncr", "npr"}
         COMPARISON_OPS = {"=", "!", "<", ">", "{", "}"}
+        OTHERCOMPARISON_TYPES = {"list", "str"}
         comp_op_present = False
 
         # Contains or
@@ -257,6 +258,13 @@ def expressionInt(expr, variables, variableMap):
                         modified_expr.append(str(int(not(expressionInt(not_expr, variables, variableMap)))))
 
                 return expressionInt(modified_expr, variables, variableMap)
+        
+        # Custom comparison
+        if len(expr) == 4 and expr[0] == "cmp" and expr[1] in OTHERCOMPARISON_TYPES:
+                if expr[1] == "list":
+                        return int(expressionList(expr[2], variables, variableMap) == expressionList(expr[3], variables, variableMap))
+                if expr[1] == "str":
+                        return int(expressionStr(expr[2], variables, variableMap) == expressionStr(expr[3], variables, variableMap))
 
         # Contains comparison operator
         for comp_op in COMPARISON_OPS:
@@ -1116,6 +1124,7 @@ def run():
         undo_program = "UNDO"
         remove_program = "REMOVE"
         # edit_program = "EDITTO"
+        clear_program = "CLEAR"
         
         # Eval-code variables
         # LIMITS = [20, 1] # 0: vars, 1: funcs
@@ -1149,6 +1158,10 @@ def run():
                                 num_lines -= 1
                         else:
                                 continue
+                
+                elif line == clear_program:
+                        lines = []
+                        num_lines = 0
                 
                 else:
                         lines.append(line)
