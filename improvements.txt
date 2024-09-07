@@ -2,7 +2,7 @@ Future improvements that are necessary to make.
 
 Expressions
 __________________________________________________
-Fix comparisons between non-ints
+Fix comparisons between non-ints (done)
 Other places were bracket delimiters would be useful
 Less reliance on spaces
 Exponentiation
@@ -27,7 +27,7 @@ Use more try-catch blocks
 User Commands
 __________________________________________________
 EDIT
-Smoothen user KeyboardInterrupt termination
+Smoothen user KeyboardInterrupt termination (done)
 
 Functions
 __________________________________________________
@@ -37,6 +37,7 @@ Support for recursion
 Methods
 __________________________________________________
 Richer methods for the provided datatypes, going beyond Python
+Type conversions
 
 Datatypes
 __________________________________________________

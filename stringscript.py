@@ -1215,4 +1215,8 @@ def run():
 """
 Run the code to Stringscript!
 """
-run()
+try:
+        run()
+except KeyboardInterrupt:
+        print("\nStringscript interrupted by user keyboard")
+        print("Thanks for using Stringscript!")
