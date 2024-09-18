@@ -42,6 +42,7 @@ Type conversions
 Datatypes
 __________________________________________________
 Range (for lists) (done)
+Slices
 Floats
 Matrices
 Maps
